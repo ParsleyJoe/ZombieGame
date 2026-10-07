@@ -10,6 +10,7 @@
 #include "player.hpp"
 #include "enemy.hpp"
 #include "particlesystem.hpp"
+#include "spawner.hpp"
 
 class Map {
 public:
@@ -51,6 +52,7 @@ public:
 				.rotation = 0.0f,
 				.zoom = 1.0f
 			})
+		, m_spawner([this](int dmg) { m_player.takeDamage(dmg); }) // player damage callback
 	{
 	}
 
@@ -59,11 +61,14 @@ public:
 
 		Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), m_camera);
 		m_player.update(dt, mouseWorldPos);
-		m_enemy.update(dt);
 		updateCamera(dt);
 		for (auto& blt : m_bullets) {
 			blt.update(dt);
 		}
+		for (auto& enemy : m_enemies) {
+			enemy.update(dt, m_player.getPosition());
+		}
+		m_spawner.update(dt, m_enemies);
 		m_particleSystem.update(dt);
 
 		// Collisions
@@ -91,15 +96,21 @@ public:
 				}
 			}
 
-			// Bullets
+			// Bullets-Map obj
 			for (auto& blt : m_bullets) {
 				if (CheckCollisionRecs(blt.getHitbox(), obj)) {
 					blt.setActive(false);
 				}
+			}
+		}
 
-				if (CheckCollisionRecs(blt.getHitbox(), m_enemy.getHitbox())) {
-					m_enemy.takeDamage(blt.getDamage());
-					m_particleSystem.emit(m_enemy.getPosition(), 20);
+		// Bullet-Enemy
+		for (auto& blt : m_bullets) {
+			for (auto& enemy : m_enemies) {
+				if (CheckCollisionRecs(blt.getHitbox(), enemy.getHitbox())) {
+					blt.setActive(false);
+					m_particleSystem.emit(enemy.getPosition(), 20);
+					enemy.takeDamage(blt.getDamage());
 				}
 			}
 		}
@@ -108,6 +119,10 @@ public:
 		std::erase_if(m_bullets, [](const Bullet& blt) {
 			return !blt.getActive();
 		});
+		// delete enemies
+		std::erase_if(m_enemies, [](const Enemy& enemy) {
+			return !enemy.getActive();
+		});
 	}
 
 	void draw() const {
@@ -115,13 +130,16 @@ public:
 
 		m_map.draw();
 		m_player.draw();
-		m_enemy.draw();
 		m_particleSystem.draw();
-
+		for (auto& enemy : m_enemies) {
+			enemy.draw();
+		}
 		for (auto& blt : m_bullets) {
 			blt.draw();
 		}
 		EndMode2D();
+
+		drawHealthBar();
 	}
 
 	void spawnBullets(Bullet& blt) {
@@ -159,10 +177,36 @@ public:
 		m_camera.target.y = Lerp(m_camera.target.y, desiredTarget.y, 8.0f * dt);
 	}
 private:
+	void drawHealthBar() const
+	{
+		const float barWidth = 300.0f;
+		const float barHeight = 25.0f;
+
+		const float x = 20.0f;
+		const float y = 20.0f;
+
+		float healthPercent = static_cast<float>(m_player.getHealth()) / static_cast<float>(m_player.getMaxHealth());
+
+		healthPercent = std::clamp(healthPercent, 0.0f, 1.0f);
+
+		// Background
+		DrawRectangle(x, y, barWidth, barHeight, DARKGRAY);
+
+		// Health
+		DrawRectangle(x, y, barWidth * healthPercent, barHeight, RED);
+
+		// Border
+		DrawRectangleLines(x, y, barWidth, barHeight, BLACK);
+
+		// Text
+		DrawText(TextFormat("%d / %d", m_player.getHealth(), m_player.getMaxHealth()), x + 10, y + 3, 18, WHITE);
+	}
+
 	Player m_player;
 	std::vector<Bullet> m_bullets{};
 	Camera2D m_camera{};
 	Map m_map{};
-	Enemy m_enemy{};
 	ParticleSystem m_particleSystem;
+	Spawner m_spawner;
+	std::vector<Enemy> m_enemies;
 };

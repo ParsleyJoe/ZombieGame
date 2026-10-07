@@ -18,11 +18,13 @@ target_sources(ZombieGame
 		src/player.cpp
 		src/enemy.cpp
 		src/particlesystem.cpp
+		src/spawner.cpp
 
 		include/game.hpp
 		include/player.hpp
 		include/enemy.hpp
 		include/particlesystem.hpp
+		include/spawner.hpp
 )
 
 target_include_directories(ZombieGame

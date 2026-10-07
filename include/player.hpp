@@ -68,9 +68,10 @@ public:
 	{
 	}
 
-	std::optional<Bullet> shoot(float dt, Vector2 dir, Vector2 pos) {
+	void update(float dt) {
 		m_fireTimer -= dt;
-
+	}
+	std::optional<Bullet> shoot(float dt, Vector2 dir, Vector2 pos) {
 		// return NOT a bullet
 		if (m_fireTimer > 0.0f)
 			return std::nullopt;
@@ -97,8 +98,10 @@ public:
 	}
 	void update(float dt, Vector2 mouseWorldPos)
 	{
+		if (!m_alive) { return; }
 		this->move(dt);
 
+		m_gun.update(dt);
 		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
 			Vector2 dir = Vector2Normalize(mouseWorldPos - m_pos);
 			auto blt = m_gun.shoot(dt, dir, m_pos);
@@ -113,8 +116,24 @@ public:
 		m_pos.y += dy;
 	}
 
+	void takeDamage(int damage) {
+		m_health -= damage;
+
+		if (m_health <= 0) {
+			m_alive = false;
+		}
+	}
+
 	void draw() const {
+		if (!m_alive) { return; }
 		DrawRectangle(m_pos.x, m_pos.y, m_width, m_height, m_color);
+	}
+
+	int getHealth() const {
+		return m_health;
+	}
+	int getMaxHealth() const {
+		return m_maxHealth;
 	}
 
 	Vector2 getPosition() const {
@@ -149,6 +168,11 @@ private:
 	float m_speed = 300.0;
 	int m_width = 50, m_height = 50;
 	Color m_color = RAYWHITE;
+
 	Gun m_gun;
 	std::function<void(Bullet)> m_spawnBullets;
+
+	int m_health = 50;
+	int m_maxHealth = 50;
+	bool m_alive = true;
 };
