@@ -12,6 +12,12 @@
 #include "particlesystem.hpp"
 #include "spawner.hpp"
 
+
+struct FloorDecal {
+	Vector2 pos;
+	float rotation;
+};
+
 class Map {
 public:
 	Map()
@@ -26,10 +32,23 @@ public:
 
 	void draw() const
 	{
-		DrawRectangle(0, 0, 3000, 2000, DARKGREEN);
+		DrawRectangle(0, 0, 3000, 2000, m_backgroundColor);
+		Color gridColor = Color{ 30, 33, 34, 255 };
+		for (int x = 0; x < 3000; x += 50) {
+			DrawLine(x, 0, x, 2000, gridColor);
+		}
 
+		for (int y = 0; y < 2000; y += 50) {
+			DrawLine(0, y, 3000, y, gridColor);
+		}
+		Color outlineColor = Color{ 100, 105, 108, 255 };
 		for (const auto& obj : m_objects) {
-			DrawRectangleRec(obj, GRAY);
+			DrawRectangleRec(obj, m_wallColor);
+			DrawRectangleLinesEx(obj, 3.0f, outlineColor);
+			DrawRectangle(
+				obj.x,
+				obj.y + obj.height - 6, obj.width,
+				6, Color{ 35, 37, 38, 255 });
 		}
 	}
 
@@ -39,6 +58,9 @@ public:
 
 private:
 	std::vector<Rectangle> m_objects;
+	std::vector<FloorDecal> m_decals;
+	Color m_backgroundColor = Color{ 24, 27, 28, 255 };
+	Color m_wallColor = Color{ 55, 58, 60, 255 };
 };
 
 

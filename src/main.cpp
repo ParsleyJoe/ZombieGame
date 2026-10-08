@@ -13,7 +13,7 @@ int main()
 		game.update();
 		
 		BeginDrawing();
-		ClearBackground(GREEN);
+		ClearBackground(DARKGRAY);
 		game.draw();
 		EndDrawing();
 	}
